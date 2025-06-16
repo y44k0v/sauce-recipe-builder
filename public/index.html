@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Hot Sauce Recipe Builder</title>
+    <!-- Chosen Palette: Warm & Spicy Neutrals -->
+    <!-- Application Structure Plan: A task-oriented, single-page application that guides the user through designing and then executing a custom hot sauce recipe. The structure begins with an interactive "Flavor Dashboard" where users can adjust sliders and toggles to define their sauce's profile (heat, tang, aromatics). These choices dynamically update a "Your Custom Ingredients" list and a "Flavor Profile" radar chart. This empowers users by making them active creators, not just passive readers. Below the dashboard is a clean, step-by-step "Process" section using an accordion to present instructions in manageable chunks. Finally, a "Why It Works" section provides educational context. This flow—Design, Execute, Learn—was chosen because it transforms a static recipe into an engaging, personalized, and educational experience, which is more usable and memorable than a linear document. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Ingredient list & proportions -> Goal: Inform & Customize -> Viz/Presentation: Interactive dashboard with sliders/toggles, a dynamically updating HTML list for ingredients, and a radar chart for the flavor profile. Interaction: User adjusts controls, which updates state variables. These variables trigger functions to re-render the ingredient list and the chart data. Justification: This provides immediate visual and textual feedback, making the customization process intuitive and engaging. Library/Method: Chart.js for the radar chart, Vanilla JS for state management and DOM updates.
+        - Report Info: Cooking instructions -> Goal: Guide (Task-Oriented) -> Viz/Presentation: An HTML accordion structure. Interaction: Users click a step header to reveal its content. Justification: This breaks the process into focused, sequential steps, preventing information overload and improving clarity during the cooking process. Library/Method: Vanilla JS to toggle visibility.
+        - Report Info: Key Proportions & Why -> Goal: Educate -> Viz/Presentation: A responsive grid of styled "cards." Interaction: Static display. Justification: This format is scannable and presents educational tidbits in a visually appealing, digestible manner without overwhelming the user. Library/Method: HTML with Tailwind CSS grid.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FFFBF5;
+            color: #2A2A2A;
+        }
+        .accent-color {
+            color: #D94423;
+        }
+        .accent-bg {
+            background-color: #D94423;
+        }
+        .secondary-accent-bg {
+            background-color: #2E8B57;
+        }
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #D94423;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .slider-thumb::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #D94423;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        .accordion-header.open .accordion-icon {
+            transform: rotate(180deg);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            height: 300px;
+            margin: auto;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="text-center py-12 px-4">
+        <h1 class="text-4xl md:text-5xl font-bold accent-color mb-2">Interactive Hot Sauce Recipe</h1>
+        <p class="text-lg text-gray-700 max-w-2xl mx-auto">Design your perfect cayenne and cilantro hot sauce. Adjust the sliders to craft your unique flavor profile, and we'll generate your custom recipe below.</p>
+    </header>
+
+    <main class="container mx-auto px-4 pb-16">
+        <!-- Flavor Dashboard Section -->
+        <section id="dashboard" class="mb-16">
+            <h2 class="text-3xl font-bold text-center mb-8">1. Flavor Dashboard</h2>
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+                <div class="grid md:grid-cols-2 gap-8 md:gap-12">
+                    <!-- Controls Column -->
+                    <div class="space-y-6">
+                        <div>
+                            <label for="heat" class="block text-lg font-semibold mb-2">🔥 Heat Level</label>
+                            <input id="heat" type="range" min="1" max="3" value="2" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <div class="flex justify-between text-sm text-gray-600 mt-1">
+                                <span>Mild</span>
+                                <span>Medium</span>
+                                <span>Hot</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="tang" class="block text-lg font-semibold mb-2">🍋 Tang & Acidity</label>
+                            <input id="tang" type="range" min="1" max="3" value="2" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <div class="flex justify-between text-sm text-gray-600 mt-1">
+                                <span>Mellow</span>
+                                <span>Balanced</span>
+                                <span>Sharp</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="aromatics" class="block text-lg font-semibold mb-2">🧄 Aromatic Profile</label>
+                            <input id="aromatics" type="range" min="1" max="3" value="2" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <div class="flex justify-between text-sm text-gray-600 mt-1">
+                                <span>Subtle</span>
+                                <span>Standard</span>
+                                <span>Garlicky</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="cilantro" class="block text-lg font-semibold mb-2">🌿 Cilantro Freshness</label>
+                            <input id="cilantro" type="range" min="1" max="3" value="2" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <div class="flex justify-between text-sm text-gray-600 mt-1">
+                                <span>Hint</span>
+                                <span>Standard</span>
+                                <span>Herbacous</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Flavor Profile Visualizer Column -->
+                    <div class="flex flex-col items-center">
+                         <h3 class="text-xl font-semibold mb-4 text-center">Your Flavor Profile</h3>
+                        <div class="chart-container">
+                            <canvas id="flavorChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Custom Recipe Section -->
+        <section id="recipe" class="mb-16">
+            <h2 class="text-3xl font-bold text-center mb-8">2. Your Custom Recipe</h2>
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+                <div class="grid md:grid-cols-2 gap-8 md:gap-12">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 border-b-2 border-red-200 pb-2">Your Custom Ingredients</h3>
+                        <ul id="ingredientList" class="space-y-2 text-gray-800 list-disc list-inside">
+                            <!-- Ingredients will be populated by JS -->
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 border-b-2 border-red-200 pb-2">Recipe Stats</h3>
+                        <div class="space-y-2 text-gray-800">
+                           <p><strong>Yield:</strong> Approx. 1.5 - 2 cups</p>
+                           <p><strong>Prep Time:</strong> 15 minutes</p>
+                           <p><strong>Cook Time:</strong> 20-25 minutes</p>
+                           <p id="flavorDescription" class="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200 text-orange-800"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- The Process Section -->
+        <section id="process" class="mb-16">
+            <h2 class="text-3xl font-bold text-center mb-8">3. The Process</h2>
+            <div id="accordionContainer" class="space-y-3">
+                <!-- Accordion items will be populated by JS -->
+            </div>
+        </section>
+
+        <!-- Why It Works Section -->
+        <section id="why">
+            <h2 class="text-3xl font-bold text-center mb-8">4. Why It Works: The Role of Each Ingredient</h2>
+             <p class="text-lg text-gray-700 max-w-3xl mx-auto text-center mb-8">Understanding the function of each component helps you master the art of hot sauce creation. Here's a quick breakdown of how your chosen ingredients contribute to the final flavor.</p>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h3 class="font-bold text-xl mb-2 accent-color">🌶️ The Peppers</h3>
+                    <p class="text-gray-700">The heart of the sauce, providing both the signature heat (capsaicin) and a distinct fruity or earthy flavor. The amount you use and whether you include the seeds and pith directly controls the spice level.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h3 class="font-bold text-xl mb-2 accent-color">💧 The Liquid</h3>
+                    <p class="text-gray-700">A blend of vinegar and water creates the sauce's body and consistency. Vinegar adds the essential tangy flavor and acts as a natural preservative, while water helps to balance the acidity and achieve a pourable texture.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h3 class="font-bold text-xl mb-2 accent-color">🌿 The Aromatics</h3>
+                    <p class="text-gray-700">Garlic, onion, and cilantro add layers of complexity. Garlic provides a pungent, savory depth, while cilantro introduces a fresh, bright, and slightly citrusy top note. They transform the sauce from simple heat to a full flavor experience.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="text-center py-8 px-4 text-gray-500">
+        <p>Crafted with 🔥 by the Interactive Recipe Builder.</p>
+    </footer>
+
+    <script>
+        const state = {
+            heat: 2,
+            tang: 2,
+            aromatics: 2,
+            cilantro: 2,
+        };
+
+        const elements = {
+            heatSlider: document.getElementById('heat'),
+            tangSlider: document.getElementById('tang'),
+            aromaticsSlider: document.getElementById('aromatics'),
+            cilantroSlider: document.getElementById('cilantro'),
+            ingredientList: document.getElementById('ingredientList'),
+            flavorDescription: document.getElementById('flavorDescription'),
+            accordionContainer: document.getElementById('accordionContainer'),
+        };
+
+        const heatMap = {
+            1: { text: 'Mild', amount: '8 oz', seeds: 'seeds & pith removed' },
+            2: { text: 'Medium', amount: '9 oz', seeds: 'some seeds included' },
+            3: { text: 'Hot', amount: '10 oz', seeds: 'seeds & pith included' }
+        };
+
+        const tangMap = {
+            1: { text: 'Mellow', vinegar: '3/4 cup Apple Cider Vinegar', water: '3/4 cup' },
+            2: { text: 'Balanced', vinegar: '1 cup White Vinegar', water: '1/2 cup' },
+            3: { text: 'Sharp', vinegar: '1 1/4 cups White Vinegar', water: '1/4 cup' }
+        };
+
+        const aromaticsMap = {
+            1: { text: 'Subtle', garlic: '3-4 cloves', onion: '1/2 tsp Onion Powder' },
+            2: { text: 'Standard', garlic: '5-6 cloves', onion: '1 tsp Onion Powder' },
+            3: { text: 'Garlicky', garlic: '7-8 cloves', onion: '1/4 cup Fresh Onion' }
+        };
+        
+        const cilantroMap = {
+            1: { text: 'Hint', amount: '1/4 cup' },
+            2: { text: 'Standard', amount: '1/2 cup' },
+            3: { text: 'Herbaceous', amount: '3/4 cup' }
+        };
+
+        const processSteps = [
+            { title: "Prepare Peppers & Aromatics", content: "Wear gloves! Stem and roughly chop your cayenne peppers. If your recipe calls for it, remove seeds and pith for less heat. Roughly chop the garlic and fresh onion (if using)." },
+            { title: "Sauté Aromatics", content: "In a medium saucepan, heat 1 tbsp of oil over medium heat. Add the chopped garlic (and fresh onion, if using) and cook for 1-2 minutes until fragrant. Do not let it brown. If using onion powder, you'll add it in the next step." },
+            { title: "Combine & Simmer", content: "Add the chopped cayenne peppers, vinegar, water, onion powder (if using), and 1 tsp of salt to the saucepan. Bring to a boil, then reduce heat to low, cover, and simmer for 20-25 minutes, or until peppers are very soft." },
+            { title: "Cool Slightly", content: "Remove the pan from the heat and let the mixture cool for 10-15 minutes. This is a critical safety step to prevent hot liquid from creating high pressure in your blender." },
+            { title: "Blend with Cilantro", content: "Carefully transfer the cooled mixture to a blender. Add the fresh cilantro." },
+            { title: "Puree to Perfection", content: "Blend on high until completely smooth, which may take 1-3 minutes. For a thinner sauce, add more water or vinegar (1 tbsp at a time) until you reach your desired consistency." },
+            { title: "Taste and Adjust", content: "This is where you make it YOUR sauce. Taste and add more salt for flavor, a splash of vinegar for tang, or even a pinch of sugar to balance the heat. For a silky-smooth texture, strain through a fine-mesh sieve." },
+            { title: "Bottle and Store", content: "Pour the sauce into clean, sterilized bottles or jars. Let it cool completely, then seal and store in the refrigerator. The flavors will meld and improve after a day or two!" }
+        ];
+
+        let flavorChart;
+
+        function createFlavorChart() {
+            const ctx = document.getElementById('flavorChart').getContext('2d');
+            flavorChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['🔥 Heat', '🍋 Tang', '🧄 Aromatic', '🌿 Freshness'],
+                    datasets: [{
+                        label: 'Flavor Profile',
+                        data: [state.heat, state.tang, state.aromatics, state.cilantro],
+                        backgroundColor: 'rgba(217, 68, 35, 0.2)',
+                        borderColor: 'rgba(217, 68, 35, 1)',
+                        pointBackgroundColor: 'rgba(217, 68, 35, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(217, 68, 35, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                            pointLabels: { font: { size: 14 }, color: '#4A5568'},
+                            beginAtZero: true,
+                            min: 0,
+                            max: 4,
+                            ticks: {
+                                display: false,
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                           display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateUI() {
+            const heat = heatMap[state.heat];
+            const tang = tangMap[state.tang];
+            const aromatics = aromaticsMap[state.aromatics];
+            const cilantro = cilantroMap[state.cilantro];
+
+            elements.ingredientList.innerHTML = `
+                <li><strong>Fresh Cayenne Peppers:</strong> ${heat.amount} (${heat.seeds})</li>
+                <li><strong>Vinegar:</strong> ${tang.vinegar}</li>
+                <li><strong>Water:</strong> ${tang.water}</li>
+                <li><strong>Garlic:</strong> ${aromatics.garlic}</li>
+                <li><strong>Onion:</strong> ${aromatics.onion}</li>
+                <li><strong>Fresh Cilantro:</strong> ${cilantro.amount}, packed</li>
+                <li><strong>Salt:</strong> 1 teaspoon (to start)</li>
+                <li><strong>Neutral Oil:</strong> 1 tablespoon</li>
+            `;
+
+            elements.flavorDescription.innerHTML = `Your custom sauce is designed to be <strong>${heat.text.toLowerCase()}</strong>, with a <strong>${tang.text.toLowerCase()}</strong> tang and a <strong>${cilantro.text.toLowerCase()}</strong> cilantro flavor.`;
+            
+            if (flavorChart) {
+                flavorChart.data.datasets[0].data = [state.heat, state.tang, state.aromatics, state.cilantro];
+                flavorChart.update();
+            }
+        }
+        
+        function createAccordion() {
+            processSteps.forEach((step, index) => {
+                const stepElement = document.createElement('div');
+                stepElement.className = 'bg-white rounded-xl shadow-md overflow-hidden';
+                stepElement.innerHTML = `
+                    <div class="accordion-header p-4 cursor-pointer flex justify-between items-center transition-colors duration-300 hover:bg-orange-50" data-index="${index}">
+                        <h4 class="text-lg font-semibold">
+                            <span class="accent-color mr-2">${index + 1}.</span>${step.title}
+                        </h4>
+                        <span class="accordion-icon text-2xl accent-color transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="accordion-content max-h-0 overflow-hidden transition-max-height duration-500 ease-in-out">
+                        <p class="p-4 pt-0 text-gray-700">${step.content}</p>
+                    </div>
+                `;
+                elements.accordionContainer.appendChild(stepElement);
+            });
+        }
+
+        function handleAccordionClick(e) {
+            const header = e.target.closest('.accordion-header');
+            if (!header) return;
+
+            const content = header.nextElementSibling;
+            const isOpen = header.classList.contains('open');
+
+            // Close all other accordions
+            document.querySelectorAll('.accordion-header').forEach(h => {
+                h.classList.remove('open');
+                h.nextElementSibling.style.maxHeight = '0px';
+            });
+
+            // Open the clicked one if it was closed
+            if (!isOpen) {
+                header.classList.add('open');
+                content.style.maxHeight = content.scrollHeight + 'px';
+            }
+        }
+        
+        function init() {
+            createFlavorChart();
+            createAccordion();
+            updateUI();
+
+            elements.heatSlider.addEventListener('input', (e) => {
+                state.heat = parseInt(e.target.value);
+                updateUI();
+            });
+            elements.tangSlider.addEventListener('input', (e) => {
+                state.tang = parseInt(e.target.value);
+                updateUI();
+            });
+            elements.aromaticsSlider.addEventListener('input', (e) => {
+                state.aromatics = parseInt(e.target.value);
+                updateUI();
+            });
+            elements.cilantroSlider.addEventListener('input', (e) => {
+                state.cilantro = parseInt(e.target.value);
+                updateUI();
+            });
+            
+            elements.accordionContainer.addEventListener('click', handleAccordionClick);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
